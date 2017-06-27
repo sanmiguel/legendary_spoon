@@ -87,7 +87,16 @@ connect_test() ->
     {ok, Pid} = ?MODULE:start_link("ws://localhost:8080/chat/test_room", []),
     ?assertMatch({ok, true}, wait_for_connected(Pid, 10)).
 
-wait_for_connected(Pid, 0) -> {ok, false};
+
+supports_multi_user_test() ->
+    Clients = [
+               {ok, _} = ?MODULE:start_link("ws://localhost:8080/chat/test_room", [])
+               || _ <- lists:seq(1, 5) ],
+    [ ?assertMatch({ok, true}, wait_for_connected(C, 5))
+      || {ok, C} <- Clients ].
+
+
+wait_for_connected(_, 0) -> {ok, false};
 wait_for_connected(Pid, Retries) ->
     case ?MODULE:is_connected(Pid) of
         {ok, true} -> {ok, true};
