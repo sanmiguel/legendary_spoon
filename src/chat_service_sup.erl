@@ -40,6 +40,9 @@ init([]) ->
                         {timeout, 30000}]}],
     {ok, { {one_for_one, 5, 10},
            [
+           #{ id => rooms,
+              start => {cs_rooms, start_link, []},
+              restart => permanent },
             ranch:child_spec(
               cs_room_server,
               50,
