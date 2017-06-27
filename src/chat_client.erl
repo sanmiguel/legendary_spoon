@@ -2,6 +2,12 @@
 
 -behaviour(websocket_client).
 
+%% API
+-export([
+         start_link/2
+        ]).
+
+%% Behaviour callbacks
 -export(
    [
     init/1,
@@ -13,6 +19,12 @@
    ]).
 
 -type state() :: #{}.
+
+-spec start_link(URI::iolist(), Args::list()) ->
+    {ok, pid()}
+    | {error, Reason::term()}.
+start_link(URI, Args) ->
+    websocket_client:start_link(URI, ?MODULE, Args).
 
 -spec init(Args::list()) ->
     {reconnect, state()}.
