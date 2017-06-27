@@ -25,25 +25,26 @@
 
 -type room() :: string().
 
-start_link(Name) ->
-    gen_server:start_link(?MODULE, [Name, []], []).
+start_link(NameStr) when is_list(NameStr) ->
+    Name = list_to_atom(NameStr),
+    gen_server:start_link({local, Name}, ?MODULE, [Name, []], []).
 
--spec join(Room::pid(), Client::pid(), Opts::list()) ->
+-spec join(Room::atom() | pid(), Client::pid(), Opts::list()) ->
     {ok, Info :: term()}
     | {error, Reason :: term()}.
-join(Room, Client, Opts) ->
+join(Room, Client, Opts) when is_pid(Room); is_atom(Room) ->
     gen_server:call(Room, {join, Client, Opts}).
 
--spec leave(Client::pid(), Room::room()) ->
+-spec leave(Room :: room(), Client :: pid()) ->
     ok
     | {error, Reason :: term()}.
-leave(Client, Room) ->
-    gen_server:call({?MODULE, Room}, {leave, Client}).
+leave(Room, Client) ->
+    gen_server:call(Room, {leave, Client}).
 
--spec members(Room :: pid()) ->
+-spec members(Room :: pid() | atom()) ->
     {ok, list(pid())}
     | {error, Reason :: term()}.
-members(Room) ->
+members(Room) when is_pid(Room) ; is_atom(Room) ->
     gen_server:call(Room, list_members).
 
 -spec broadcast(Room :: room(), Message :: binary()) ->
@@ -63,6 +64,9 @@ handle_call(list_members, _From, #{ clients := Cs }=St0) ->
 handle_call({join, Client, Opts}, _From, #{ clients := Cs }=St0) ->
     error_logger:info_msg("Client[~p] joined ~s with opts ~p", [Client, maps:get(name, St0), Opts]),
     {reply, ok, St0#{ clients => [ Client | Cs ]}};
+handle_call({leave, Client}, _From, #{ clients := Cs }=St0) ->
+    error_logger:info_msg("Client[~p] leaving ~s", [Client, maps:get(name, St0)]),
+    {reply, ok, St0#{ clients => Cs -- [Client] }};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
